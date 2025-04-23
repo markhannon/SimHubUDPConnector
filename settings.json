@@ -1,0 +1,8 @@
+{
+    "src": "apps\\lua",
+    "dst": "D:\\SteamLibrary\\steamapps\\common\\assettocorsa\\apps\\lua",
+    "bld": "apps",
+    "out": "outputs",
+    "name": "SimHubUDPConnector", 
+    "version": "1.3"
+}
