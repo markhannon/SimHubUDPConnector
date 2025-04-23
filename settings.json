@@ -4,5 +4,5 @@
     "bld": "apps",
     "out": "outputs",
     "name": "SimHubUDPConnector", 
-    "version": "1.3"
+    "version": "1.3-markhannon"
 }

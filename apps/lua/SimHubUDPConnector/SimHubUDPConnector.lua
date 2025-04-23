@@ -2,14 +2,43 @@
 local socket = require('shared/socket')
 local udp = socket.udp()
 udp:settimeout(0)
-udp:setpeername("127.0.0.1", 20777)
+udp:setpeername("127.0.0.1", 30777)
 local DEBUG_ON = true
 local sim = ac.getSim()
 local customData
 local carState = ac.getCar(0)
 local wheelsState = carState.wheels -- required for the Road Rumble Effect
 local carPhysics = ac.getCarPhysics(0)
+local carsUtils = require('shared/sim/cars') -- required for tyre.ini data
 local cspVersion = ac.getPatchVersion()
+
+---Return an estimated maximumOptimalTemperature based on compoundName 
+---and the basic minimalOptimalTemperature.   Simple algorithm based on
+---name of the compound and known characteristics.
+---
+---@param compoundName string name of the compound
+---@param minTemp number minimalOptimalTemperature
+---@return maximumOptimalTemperature
+local function maximumOptimalTemperature(compoundName, minTemp)
+	if string.find(compoundName, "Street") then
+		return minTemp + 10
+	elseif string.find(compoundName, "Intermediate") then
+		return minTemp + 10
+	elseif string.find(compoundName, "Wet") then
+		return minTemp + 10
+	elseif string.find(compoundName, "Super") then
+		return minTemp + 15
+	elseif string.find(compoundName, 'Soft') then
+		return minTemp + 20
+	elseif string.find(compoundName, 'Medium') then
+		return minTemp + 20
+	elseif string.find(compoundName, 'Hard') then
+		return minTemp + 25
+	else
+		return minTemp + 30
+	end
+end
+--- END
 
 function checkHasCarConnection()
 	local carPath, ret
@@ -200,6 +229,26 @@ function script.update(dt)
 		customData.WheelRRSlipAngle = wheelsState[3].slipAngle
 		customData.WheelRRSpeedDifference = wheelsState[3].speedDifference
 		-- end
+	else
+		customData.WheelSurfaceError = "Please upgrade your csp to version 0.2.7 min."
+	end
+
+	customData.tyreCompound = ac.getTyresLongName(0, carState.compoundIndex)
+	customData.idealPressureFront = carsUtils.getTyreConfigValue(carState.compoundIndex, true, "PRESSURE_IDEAL", 0)
+	customData.idealPressureRear = carsUtils.getTyreConfigValue(carState.compoundIndex, false, "PRESSURE_IDEAL", 0)
+	customData.minimumOptimalTemperature = wheelsState[0].tyreOptimumTemperature
+	customData.maximumOptimalTemperature = maximumOptimalTemperature(customData.tyreCompound, customData.minimumOptimalTemperature)
+	if (cspVersion.versionCompare(cspVersion, "0.2.7") > -1) then
+		-- TemperatureMultiplier shows fraction of optimum grip
+		customData.WheelFLTemperatureMultiplier = wheelsState[0].temperatureMultiplier
+		customData.WheelFRTemperatureMultiplier = wheelsState[1].temperatureMultiplier
+		customData.WheelRLTemperatureMultiplier = wheelsState[2].temperatureMultiplier
+		customData.WheelRRTemperatureMultiplier = wheelsState[3].temperatureMultiplier
+		-- IsHot shows if the tyres is considered hot
+		customData.WheelFLIsHot = wheelsState[0].isHot
+		customData.WheelFRIsHot = wheelsState[1].isHot
+		customData.WheelRLIsHot = wheelsState[2].isHot
+		customData.WheelRRIsHot = wheelsState[3].isHot
 	else
 		customData.WheelSurfaceError = "Please upgrade your csp to version 0.2.7 min."
 	end
